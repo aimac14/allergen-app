@@ -8824,9 +8824,12 @@ function matchesSearch(dish) {
     if (z.inhaltsstoffe && wordMatch(z.inhaltsstoffe, s)) return { match: true, type: "zutat" };
     if (z.allergene && wordMatch(z.allergene, s)) return { match: true, type: "zutat" };
   }
-  for (const [rname, items] of Object.entries(dish.rezept_zutaten || {})) {
-    for (const item of (items || [])) { if (item.zutat && wordMatch(item.zutat, s)) return { match: true, type: "rezept" }; }
-  }
+  try {
+    const rz = (dish.rezept_zutaten && typeof dish.rezept_zutaten === 'object' && !Array.isArray(dish.rezept_zutaten)) ? dish.rezept_zutaten : {};
+    for (const [rname, items] of Object.entries(rz)) {
+      for (const item of (Array.isArray(items) ? items : [])) { if (item && item.zutat && wordMatch(item.zutat, s)) return { match: true, type: "rezept" }; }
+    }
+  } catch(e) {}
   return { match: false, type: null };
 }
 
@@ -8973,22 +8976,27 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
 
   // Recipes
   let recipeHtml = "";
-  const recipeNames = Object.keys(dish.rezept_zutaten || {});
-  if (recipeNames.length > 0) {
-    let btns = "";
-    let sections = "";
-    recipeNames.forEach((rname, ri) => {
-      const rid = "r" + idx + "_" + ri;
-      btns += '<button class="recipe-btn" onclick="toggleRecipe(\'' + rid + '\')">' + rname + '</button>';
-      let rows = "";
-      (dish.rezept_zutaten[rname] || []).forEach(item => {
-        const hl = searchTerm && item.zutat && item.zutat.toLowerCase().includes(searchTerm) ? ' style="background:rgba(165,200,212,.3);font-weight:600;"' : '';
-        rows += '<tr' + hl + '><td>' + item.zutat + '</td><td>' + item.menge + '</td><td>' + item.einheit + '</td></tr>';
+  try {
+    const rz = (dish.rezept_zutaten && typeof dish.rezept_zutaten === 'object' && !Array.isArray(dish.rezept_zutaten)) ? dish.rezept_zutaten : {};
+    const recipeNames = Object.keys(rz);
+    if (recipeNames.length > 0) {
+      let btns = "";
+      let sections = "";
+      recipeNames.forEach((rname, ri) => {
+        const rid = "r" + idx + "_" + ri;
+        btns += '<button class="recipe-btn" onclick="toggleRecipe(\'' + rid + '\')">' + rname + '</button>';
+        let rows = "";
+        const items = Array.isArray(rz[rname]) ? rz[rname] : [];
+        items.forEach(item => {
+          if (!item || typeof item !== 'object') return;
+          const hl = searchTerm && item.zutat && item.zutat.toLowerCase().includes(searchTerm) ? ' style="background:rgba(165,200,212,.3);font-weight:600;"' : '';
+          rows += '<tr' + hl + '><td>' + (item.zutat||'') + '</td><td>' + (item.menge||'') + '</td><td>' + (item.einheit||'') + '</td></tr>';
+        });
+        sections += '<div class="recipe-section" id="' + rid + '"><div class="recipe-title">' + rname + '</div><table class="recipe-table"><thead><tr><th>Zutat</th><th>Menge</th><th>Einheit</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
       });
-      sections += '<div class="recipe-section" id="' + rid + '"><div class="recipe-title">' + rname + '</div><table class="recipe-table"><thead><tr><th>Zutat</th><th>Menge</th><th>Einheit</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
-    });
-    recipeHtml = '<div class="sec-title">Rezepte</div>' + btns + sections;
-  }
+      recipeHtml = '<div class="sec-title">Rezepte</div>' + btns + sections;
+    }
+  } catch(e) { recipeHtml = ""; }
 
   // Cards stay collapsed – the "Enthalten in" hint shows the key info without opening
   const matchHint = matchedZutaten.length > 0 ? '<div class="search-hint">Enthalten in: <strong>' + matchedZutaten.join(', ') + '</strong></div>' : '';
