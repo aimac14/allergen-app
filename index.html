@@ -143,6 +143,20 @@ body{font-family:"Space Grotesk",sans-serif;background:var(--bg);min-height:100v
 .ing-row.search-match{border-left-color:var(--accent);background:rgba(165,200,212,.25);border-left-width:4px;}
 .ing-inhalt{display:block;font-size:11px;color:#666;margin-top:2px;font-style:italic;}
 .search-hint{padding:4px 16px 6px;font-size:12px;color:var(--accent);letter-spacing:0.3px;}
+.report-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.25);z-index:1000;transition:transform .2s;}
+.report-fab:hover{transform:scale(1.1);background:#024560;}
+.report-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:2000;align-items:center;justify-content:center;}
+.report-box{background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.report-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;color:var(--accent);}
+.report-close{background:none;border:none;font-size:28px;cursor:pointer;color:#999;line-height:1;}
+.report-desc{font-size:13px;color:#666;margin:0 0 16px;line-height:1.4;}
+.report-label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.report-input{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+.report-textarea{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box;font-family:'Poppins',sans-serif;resize:vertical;}
+.report-input:focus,.report-textarea:focus{outline:none;border-color:var(--accent);}
+.report-send{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.report-send:hover{background:#024560;}
+.report-status{font-size:13px;color:var(--red);margin-bottom:8px;}
 .ing-name{font-weight:600;}
 .ing-allergen{font-size:11px;color:var(--orange);}
 .ing-allergen.ex{color:var(--red);}
@@ -8261,6 +8275,12 @@ function toggleAllergen(a) {
   render();
 }
 
+function wordMatch(text, term) {
+  if (!text || !term) return false;
+  const re = new RegExp('(^|[^a-zäöüß])' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '', 'i');
+  return re.test(text);
+}
+
 function matchesSearch(dish) {
   if (!searchTerm) return { match: true, type: null };
   const s = searchTerm;
@@ -8270,7 +8290,7 @@ function matchesSearch(dish) {
   for (const sp of (dish.spuren || [])) { if (sp && sp.toLowerCase().includes(s)) return { match: true, type: "spuren" }; }
   for (const z of (dish.zutaten || [])) {
     if (z.name && z.name.toLowerCase().includes(s)) return { match: true, type: "zutat" };
-    if (z.inhaltsstoffe && z.inhaltsstoffe.toLowerCase().includes(s)) return { match: true, type: "zutat" };
+    if (z.inhaltsstoffe && wordMatch(z.inhaltsstoffe, s)) return { match: true, type: "zutat" };
     if (z.allergene && z.allergene.toLowerCase().includes(s)) return { match: true, type: "zutat" };
   }
   for (const [rname, items] of Object.entries(dish.rezept_zutaten || {})) {
@@ -8389,7 +8409,7 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
       const hasAllergen = allergenText && !allergenText.startsWith("Spuren");
       // Highlight matching ingredient when search matches on zutat/inhaltsstoffe
       const nameMatch = searchTerm && z.name && z.name.toLowerCase().includes(searchTerm);
-      const inhaltMatch = searchTerm && z.inhaltsstoffe && z.inhaltsstoffe.toLowerCase().includes(searchTerm);
+      const inhaltMatch = searchTerm && z.inhaltsstoffe && wordMatch(z.inhaltsstoffe, searchTerm);
       const isSearchMatch = (searchType === "zutat") && (nameMatch || inhaltMatch);
       if (isSearchMatch && !matchedZutat) matchedZutat = z.name;
       const cls = isSearchMatch ? "ing-row search-match" : (isExcl ? "ing-row is-excluded" : (hasAllergen ? "ing-row has-allergen" : "ing-row"));
@@ -8452,6 +8472,49 @@ function toggleRecipe(id) {
 }
 
 init();
+
+// Error report modal
+function openReport() {
+  document.getElementById("reportModal").style.display = "flex";
+  document.getElementById("reportDish").value = "";
+  document.getElementById("reportMsg").value = "";
+  document.getElementById("reportStatus").style.display = "none";
+}
+function closeReport() {
+  document.getElementById("reportModal").style.display = "none";
+}
+function sendReport() {
+  const dish = document.getElementById("reportDish").value.trim();
+  const msg = document.getElementById("reportMsg").value.trim();
+  if (!msg) { document.getElementById("reportStatus").style.display = "block"; document.getElementById("reportStatus").textContent = "Bitte Beschreibung eingeben."; return; }
+  const subject = encodeURIComponent("Allergen-App Fehlermeldung" + (dish ? ": " + dish : ""));
+  const body = encodeURIComponent("Gericht: " + (dish || "–") + "\n\nBeschreibung:\n" + msg + "\n\n---\nGesendet über die Allergen-App");
+  window.location.href = "mailto:hello@vierzehn-loerrach.de?subject=" + subject + "&body=" + body;
+  document.getElementById("reportStatus").style.display = "block";
+  document.getElementById("reportStatus").textContent = "E-Mail App wird geöffnet...";
+  setTimeout(closeReport, 2000);
+}
 </script>
+
+<!-- Report Error Button -->
+<button class="report-fab" onclick="openReport()" title="Fehler melden">&#9888;</button>
+
+<!-- Report Modal -->
+<div id="reportModal" class="report-overlay" onclick="if(event.target===this)closeReport()">
+  <div class="report-box">
+    <div class="report-header">
+      <span>Fehler melden</span>
+      <button class="report-close" onclick="closeReport()">&times;</button>
+    </div>
+    <p class="report-desc">Du hast einen Fehler bei den Allergenen oder Zutaten gefunden? Hilf uns die Daten zu verbessern!</p>
+    <label class="report-label">Gericht (optional)</label>
+    <input type="text" id="reportDish" class="report-input" placeholder="z.B. Caesar Salad">
+    <label class="report-label">Was stimmt nicht?</label>
+    <textarea id="reportMsg" class="report-textarea" rows="4" placeholder="z.B. Allergen fehlt, falsche Zutat, ..."></textarea>
+    <div id="reportStatus" class="report-status"></div>
+    <button class="report-send" onclick="sendReport()">Absenden</button>
+  </div>
+</div>
+
 </body>
 </html>
