@@ -8277,7 +8277,11 @@ function matchesSearch(dish) {
   if (dish.kategorie.toLowerCase().includes(s)) return { match: true, type: "cat" };
   for (const a of dish.allergene) { if (a.toLowerCase().includes(s)) return { match: true, type: "allergen" }; }
   for (const sp of dish.spuren) { if (sp.toLowerCase().includes(s)) return { match: true, type: "spuren" }; }
-  for (const z of dish.zutaten) { if (z.name.toLowerCase().includes(s)) return { match: true, type: "zutat" }; }
+  for (const z of dish.zutaten) {
+    if (z.name.toLowerCase().includes(s)) return { match: true, type: "zutat" };
+    if (z.inhaltsstoffe && z.inhaltsstoffe.toLowerCase().includes(s)) return { match: true, type: "zutat" };
+    if (z.allergene && z.allergene.toLowerCase().includes(s)) return { match: true, type: "zutat" };
+  }
   for (const [rname, items] of Object.entries(dish.rezept_zutaten || {})) {
     for (const item of items) { if (item.zutat.toLowerCase().includes(s)) return { match: true, type: "rezept" }; }
   }
