@@ -8400,21 +8400,24 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
 
   // Ingredients
   let ingHtml = "";
-  let matchedZutat = "";
+  let matchedZutaten = [];
   if (dish.zutaten.length > 0) {
     let rows = "";
     dish.zutaten.forEach(z => {
       const allergenText = z.allergene && z.allergene !== "Keine" ? z.allergene : "";
       const isExcl = allergenText && excluded.some(e => allergenText.toLowerCase().includes(e.toLowerCase()));
       const hasAllergen = allergenText && !allergenText.startsWith("Spuren");
-      // Highlight matching ingredient when search matches on zutat/inhaltsstoffe
+      // Highlight matching ingredient for zutat/inhaltsstoffe search
       const nameMatch = searchTerm && z.name && z.name.toLowerCase().includes(searchTerm);
       const inhaltMatch = searchTerm && z.inhaltsstoffe && wordMatch(z.inhaltsstoffe, searchTerm);
-      const isSearchMatch = (searchType === "zutat") && (nameMatch || inhaltMatch);
-      if (isSearchMatch && !matchedZutat) matchedZutat = z.name;
+      const isZutatMatch = (searchType === "zutat") && (nameMatch || inhaltMatch);
+      // Highlight matching ingredient for allergen search (show WHERE the allergen is)
+      const isAllergenMatch = (searchType === "allergen") && allergenText && allergenText.toLowerCase().includes(searchTerm);
+      const isSearchMatch = isZutatMatch || isAllergenMatch;
+      if (isSearchMatch) matchedZutaten.push(z.name);
       const cls = isSearchMatch ? "ing-row search-match" : (isExcl ? "ing-row is-excluded" : (hasAllergen ? "ing-row has-allergen" : "ing-row"));
       rows += '<div class="' + cls + '"><span class="ing-name">' + z.name + '</span>';
-      if (isSearchMatch && inhaltMatch && !nameMatch && z.inhaltsstoffe) {
+      if (isZutatMatch && inhaltMatch && !nameMatch && z.inhaltsstoffe) {
         rows += ' <span class="ing-inhalt">' + z.inhaltsstoffe.substring(0, 80) + (z.inhaltsstoffe.length > 80 ? '...' : '') + '</span>';
       }
       if (allergenText) {
@@ -8444,9 +8447,9 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
     recipeHtml = '<div class="sec-title">Rezepte</div>' + btns + sections;
   }
 
-  // Auto-open card if search matched on ingredient
-  const autoOpen = (searchType === "zutat") ? " open" : "";
-  const matchHint = matchedZutat ? '<div class="search-hint">Gefunden in: <strong>' + matchedZutat + '</strong></div>' : '';
+  // Auto-open card if search matched on ingredient or allergen source
+  const autoOpen = (searchType === "zutat" || (searchType === "allergen" && matchedZutaten.length > 0)) ? " open" : "";
+  const matchHint = matchedZutaten.length > 0 ? '<div class="search-hint">Enthalten in: <strong>' + matchedZutaten.join(', ') + '</strong></div>' : '';
 
   return '<div class="' + cardClass + '">' +
     '<div class="card-head" onclick="toggleCard(' + idx + ')">' +
