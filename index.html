@@ -281,7 +281,6 @@ const DISHES = [
     "name": "Acai Smoothie Bowl",
     "kategorie": "Frühstück",
     "allergene": [
-      "Gluten",
       "Schalenfrüchte",
       "Sesam"
     ],
@@ -294,7 +293,7 @@ const DISHES = [
     ],
     "vegan": true,
     "laktosefrei": true,
-    "glutenfrei": false,
+    "glutenfrei": true,
     "zutaten": [
       {
         "name": "Acai Bowl (Basis)",
@@ -305,25 +304,15 @@ const DISHES = [
         "name": "Granola",
         "inhaltsstoffe": "Haferflocken 40% (GLUTEN), Sonnenblumenöl, Kokosraspeln, HASELNÜSSE 8%, Kürbiskerne, Sonnenblumenkerne, Leinsamen, Sesam, Zimt. Kann Spuren von ERDNÜSSEN, anderen SCHALENFRÜCHTEN, SOJA, MILCH, SESAM und LUPINEN enthalten",
         "allergene": "Gluten, Schalenfrüchte (Haselnüsse), Sesam; Spuren: Erdnüsse, Soja, Milch/Laktose, Lupinen"
-      },
-      {
-        "name": "Kokoswasser",
-        "inhaltsstoffe": "100% Kokoswasser",
-        "allergene": "Keine"
-      },
-      {
-        "name": "Mangopüree",
-        "inhaltsstoffe": "Mangofruchtmark (90-100%), ggf. Zucker",
-        "allergene": "Keine"
       }
     ],
     "alternativen": [
       {
         "original": "Granola",
-        "allergen": "Gluten (Hafer), Schalenfrüchte",
-        "alternative": "Ohne Granola-Topping",
-        "typ": "Glutenfrei",
-        "hinweis": "Bowl ohne Granola; frische Früchte als Alternative"
+        "allergen": "Schalenfrüchte",
+        "alternative": "Frische Früchte",
+        "typ": "Ohne Schalenfrüchte",
+        "hinweis": "Granola weglassen, frische Früchte als Alternative"
       }
     ],
     "rezept_zutaten": {}
@@ -2310,13 +2299,6 @@ const DISHES = [
       }
     ],
     "alternativen": [
-      {
-        "original": "Griechischer Joghurt",
-        "allergen": "Milch/Laktose",
-        "alternative": "Soja Joghurt",
-        "typ": "Laktosefrei/Vegan",
-        "hinweis": "Soja Joghurt statt griech. Joghurt; enthält Soja"
-      },
       {
         "original": "Griechischer Joghurt",
         "allergen": "Milch/Laktose",
