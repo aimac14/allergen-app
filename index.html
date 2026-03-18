@@ -140,6 +140,9 @@ body{font-family:"Space Grotesk",sans-serif;background:var(--bg);min-height:100v
 .ing-row{padding:8px 10px;border-radius:8px;border-left:3px solid var(--border);background:var(--bg);font-size:13px;}
 .ing-row.has-allergen{border-left-color:var(--orange);background:#fff9f2;}
 .ing-row.is-excluded{border-left-color:var(--red);background:#fff4f4;}
+.ing-row.search-match{border-left-color:var(--accent);background:rgba(165,200,212,.25);border-left-width:4px;}
+.ing-inhalt{display:block;font-size:11px;color:#666;margin-top:2px;font-style:italic;}
+.search-hint{padding:4px 16px 6px;font-size:12px;color:var(--accent);letter-spacing:0.3px;}
 .ing-name{font-weight:600;}
 .ing-allergen{font-size:11px;color:var(--orange);}
 .ing-allergen.ex{color:var(--red);}
@@ -8377,14 +8380,23 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
 
   // Ingredients
   let ingHtml = "";
+  let matchedZutat = "";
   if (dish.zutaten.length > 0) {
     let rows = "";
     dish.zutaten.forEach(z => {
       const allergenText = z.allergene && z.allergene !== "Keine" ? z.allergene : "";
       const isExcl = allergenText && excluded.some(e => allergenText.toLowerCase().includes(e.toLowerCase()));
       const hasAllergen = allergenText && !allergenText.startsWith("Spuren");
-      const cls = isExcl ? "ing-row is-excluded" : (hasAllergen ? "ing-row has-allergen" : "ing-row");
+      // Highlight matching ingredient when search matches on zutat/inhaltsstoffe
+      const nameMatch = searchTerm && z.name && z.name.toLowerCase().includes(searchTerm);
+      const inhaltMatch = searchTerm && z.inhaltsstoffe && z.inhaltsstoffe.toLowerCase().includes(searchTerm);
+      const isSearchMatch = (searchType === "zutat") && (nameMatch || inhaltMatch);
+      if (isSearchMatch && !matchedZutat) matchedZutat = z.name;
+      const cls = isSearchMatch ? "ing-row search-match" : (isExcl ? "ing-row is-excluded" : (hasAllergen ? "ing-row has-allergen" : "ing-row"));
       rows += '<div class="' + cls + '"><span class="ing-name">' + z.name + '</span>';
+      if (isSearchMatch && inhaltMatch && !nameMatch && z.inhaltsstoffe) {
+        rows += ' <span class="ing-inhalt">' + z.inhaltsstoffe.substring(0, 80) + (z.inhaltsstoffe.length > 80 ? '...' : '') + '</span>';
+      }
       if (allergenText) {
         rows += ' <span class="ing-allergen' + (isExcl ? " ex" : "") + '">(' + allergenText + ')</span>';
       }
@@ -8412,14 +8424,19 @@ function buildCard(dish, idx, hasExcluded, hasAltForExcluded, excluded, searchTy
     recipeHtml = '<div class="sec-title">Rezepte</div>' + btns + sections;
   }
 
+  // Auto-open card if search matched on ingredient
+  const autoOpen = (searchType === "zutat") ? " open" : "";
+  const matchHint = matchedZutat ? '<div class="search-hint">Gefunden in: <strong>' + matchedZutat + '</strong></div>' : '';
+
   return '<div class="' + cardClass + '">' +
     '<div class="card-head" onclick="toggleCard(' + idx + ')">' +
       '<div class="card-left"><span class="dish-name">' + dish.name + '</span>' + badges + '</div>' +
-      '<span class="chevron" id="chev' + idx + '">&#9660;</span>' +
+      '<span class="chevron' + autoOpen + '" id="chev' + idx + '">&#9660;</span>' +
     '</div>' +
+    matchHint +
     '<div class="card-allergens">' + chips + '</div>' +
     altHtml +
-    '<div class="card-details" id="det' + idx + '">' + ingHtml + recipeHtml + '</div>' +
+    '<div class="card-details' + autoOpen + '" id="det' + idx + '">' + ingHtml + recipeHtml + '</div>' +
   '</div>';
 }
 
